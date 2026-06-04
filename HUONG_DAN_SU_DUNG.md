@@ -16,7 +16,7 @@
 
 ## 🔍 GIỚI THIỆU
 
-Hệ thống **Pico Macro** cho phép bạn:
+Hệ thống **Pico Macro** cho phép bạn sử dụng RP2040-ZERO (hoặc Raspberry Pi Pico) để:
 - ✅ Thực thi combo phím/chuột tự động
 - ✅ Kích hoạt bằng 1 phím bấm (mặc định: Q)
 - ✅ Hardware-based, khó phát hiện
@@ -25,7 +25,7 @@ Hệ thống **Pico Macro** cho phép bạn:
 
 **Cơ chế hoạt động:**
 ```
-Windows PC ←──USB──→ Raspberry Pi Pico
+Windows PC ←──USB──→ RP2040-ZERO (hoặc Raspberry Pi Pico)
      ↓                        ↓
   Nhấn Q              Nhận lệnh 0x51
      ↓                        ↓
@@ -38,16 +38,18 @@ Gửi HID Report        Thực thi macro
 ## 🔧 YÊU CẦU PHẦN CỨNG
 
 ### **Bắt buộc:**
-1. **Raspberry Pi Pico** (hoặc Pico W)
-   - Giá: ~50,000 - 100,000 VNĐ
+1. **RP2040-ZERO** (hoặc Raspberry Pi Pico/Pico W)
+   - Giá: ~40,000 - 80,000 VNĐ
    - Mua tại: Shopee, Lazada, các shop linh kiện điện tử
+   - Chip: RP2040 dual-core ARM Cortex-M0+
 
-2. **Cáp USB Micro-B** (kết nối Pico → PC)
+2. **Cáp USB Type-C** (kết nối RP2040-ZERO → PC)
+   - **Lưu ý**: RP2040-ZERO dùng cổng USB Type-C (không phải Micro-B như Pico)
    - Đảm bảo cáp có chức năng truyền dữ liệu (không chỉ sạc)
 
 ### **Khuyến nghị:**
-- Hub USB (nếu PC thiếu cổng USB)
-- Vỏ case cho Pico (tùy chọn, để bảo vệ)
+- Hub USB (nếu PC thiếu cổng USB Type-C)
+- Vỏ case cho RP2040-ZERO (tùy chọn, để bảo vệ - RP2040-ZERO rất nhỏ và dễ hỏng)
 
 ---
 
@@ -224,27 +226,28 @@ build/
 
 ## 📥 FLASH FIRMWARE VÀO PICO
 
-### **BƯỚC 1: Đưa Pico vào chế độ BOOTSEL**
+### **BƯỚC 1: Đưa RP2040-ZERO vào chế độ BOOT**
 
-1. **RÚT cáp USB** khỏi Pico (nếu đang cắm)
+1. **RÚT cáp USB** khỏi RP2040-ZERO (nếu đang cắm)
 
-2. **GIỮ NÚT BOOTSEL** trên Pico:
+2. **GIỮ NÚT BOOT** trên RP2040-ZERO:
    ```
-   ┌─────────────────┐
-   │  Raspberry Pi   │
-   │      Pico       │
-   │                 │
-   │     [BOOTSEL]   │ ← Nút nhỏ màu trắng/đen trên board
-   │                 │
-   │    [USB Port]   │
-   └─────────────────┘
+   ┌──────────────┐
+   │  RP2040-ZERO │
+   │    (mặt sau)  │
+   │              │
+   │   [BOOT]     │ ← Nút nhỏ ở mặt sau board (hoặc có thể ở cạnh)
+   │              │
+   │  [USB Type-C]│
+   └──────────────┘
    ```
+   **Lưu ý**: RP2040-ZERO nhỏ hơn Pico, nút BOOT thường ở mặt sau hoặc cạnh board
 
-3. **TRONG KHI GIỮ NÚT**, cắm cáp USB vào máy tính
+3. **TRONG KHI GIỮ NÚT**, cắm cáp USB Type-C vào máy tính
 
 4. **GIỮ THÊM 2-3 GIÂY**, sau đó thả tay
 
-5. Pico sẽ xuất hiện như **ổ đĩa USB** có tên `RPI-RP2`
+5. RP2040-ZERO sẽ xuất hiện như **ổ đĩa USB** có tên `RPI-RP2`
 
 ### **BƯỚC 2: Copy file .uf2**
 
@@ -262,10 +265,10 @@ copy d:\duk\autoXdame\pico_macro\build\pico_macro.uf2 E:\
 ### **BƯỚC 3: Chờ flash hoàn tất**
 
 - Ổ đĩa `RPI-RP2` sẽ **tự động biến mất**
-- Pico sẽ **tự động khởi động lại**
-- LED trên Pico có thể nhấp nháy (tùy code)
+- RP2040-ZERO sẽ **tự động khởi động lại**
+- LED trên RP2040-ZERO có thể nhấp nháy (tùy code)
 
-✅ **Flash thành công! Pico giờ đang chạy firmware macro**
+✅ **Flash thành công! RP2040-ZERO giờ đang chạy firmware macro**
 
 ---
 
@@ -304,9 +307,9 @@ g++ send_q_cpp.cpp -o send_q.exe ^
 
 ## ▶️ SỬ DỤNG HỆ THỐNG
 
-### **BƯỚC 1: Kết nối Pico**
+### **BƯỚC 1: Kết nối RP2040-ZERO**
 
-1. **CẮM Pico vào USB** (không cần giữ BOOTSEL lần này)
+1. **CẮM RP2040-ZERO vào USB** (không cần giữ nút BOOT lần này)
 2. Windows sẽ tự động nhận thiết bị HID
 3. Không cần cài driver
 
@@ -566,13 +569,13 @@ setx PICO_SDK_PATH "C:\pico-sdk"
 ### **❌ Lỗi 3: "[ERROR] Pico HID device not found"**
 
 **Nguyên nhân:**
-- Pico chưa được flash firmware
+- RP2040-ZERO chưa được flash firmware
 - Firmware bị lỗi
-- Cáp USB chỉ có chức năng sạc
+- Cáp USB Type-C chỉ có chức năng sạc (không có data)
 
 **Giải pháp:**
 1. **Flash lại firmware:**
-   - Rút USB, giữ BOOTSEL, cắm lại
+   - Rút USB, giữ nút BOOT, cắm lại
    - Copy lại file `.uf2`
 
 2. **Kiểm tra Device Manager:**
@@ -580,9 +583,10 @@ setx PICO_SDK_PATH "C:\pico-sdk"
    - Tìm "Human Interface Devices"
    - Phải có thiết bị với VID=2E8A
 
-3. **Thử cổng USB khác**
+3. **Thử cổng USB khác** (ưu tiên cổng USB 2.0)
 
-4. **Đổi cáp USB** (dùng loại có data)
+4. **Đổi cáp USB Type-C** (đảm bảo cáp có hỗ trợ data, không chỉ sạc)
+   - **Lưu ý**: Nhiều cáp Type-C chỉ có chức năng sạc nhanh
 
 ---
 
