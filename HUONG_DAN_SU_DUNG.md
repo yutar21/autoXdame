@@ -274,7 +274,24 @@ copy d:\duk\autoXdame\pico_macro\build\pico_macro.uf2 E:\
 
 ## 🖥️ BIÊN DỊCH ỨNG DỤNG WINDOWS
 
-### **Phương án 1: Dùng Visual Studio (Khuyến nghị)**
+**LƯU Ý:** Có 2 phiên bản:
+- **Hook version** (cũ): Latency ~1-2ms
+- **Raw Input version** (mới): Latency ~0.2-0.5ms ⚡ **Khuyến nghị**
+
+### **Phương án 1: Dùng batch script (Khuyến nghị)**
+
+1. Mở **Developer Command Prompt for VS 2022**
+2. Chạy:
+```cmd
+cd d:\duk\autoXdame\pico_macro\scripts
+build_windows_app.bat
+```
+
+3. Kết quả:
+   - `send_q_hook.exe` - Phiên bản gốc
+   - `send_q_rawinput.exe` - **Phiên bản tối ưu (dùng cái này)**
+
+### **Phương án 2: Dùng Visual Studio (Hook version)**
 
 1. Mở **Visual Studio 2022**
 2. File → New → Project from Existing Code
@@ -284,24 +301,58 @@ copy d:\duk\autoXdame\pico_macro\build\pico_macro.uf2 E:\
 
 File `send_q.exe` sẽ được tạo trong thư mục `Debug\` hoặc `Release\`
 
-### **Phương án 2: Dùng Command Line (Developer Command Prompt)**
+### **Phương án 3: Dùng Command Line (Raw Input - Tối ưu)**
+
+**Build phiên bản tối ưu (khuyến nghị):**
+
+```bash
+cd d:\duk\autoXdame\pico_macro\scripts
+
+cl.exe send_q_rawinput.cpp ^
+  /link setupapi.lib hid.lib user32.lib ^
+  /out:send_q_rawinput.exe
+```
+
+**Build phiên bản gốc:**
 
 ```bash
 cd d:\duk\autoXdame\pico_macro\scripts
 
 cl.exe send_q_cpp.cpp ^
   /link setupapi.lib hid.lib ^
-  /out:send_q.exe
+  /out:send_q_hook.exe
 ```
 
-### **Phương án 3: Dùng MinGW**
+### **Phương án 4: Dùng MinGW**
 
+**Raw Input version (khuyến nghị):**
 ```bash
 cd d:\duk\autoXdame\pico_macro\scripts
 
-g++ send_q_cpp.cpp -o send_q.exe ^
+g++ send_q_rawinput.cpp -o send_q_rawinput.exe ^
+  -lsetupapi -lhid -luser32 -static
+```
+
+**Hook version:**
+```bash
+g++ send_q_cpp.cpp -o send_q_hook.exe ^
   -lsetupapi -lhid -static
 ```
+
+---
+
+## 📊 SO SÁNH 2 PHIÊN BẢN WINDOWS APP
+
+| Tính năng | Hook Version | Raw Input Version |
+|-----------|-------------|-------------------|
+| **File** | `send_q_hook.exe` | `send_q_rawinput.exe` |
+| **Latency** | ~1-2ms | **~0.2-0.5ms** ⚡ |
+| **Admin required** | ⚠️ Đôi khi | ❌ Không |
+| **Antivirus** | ⚠️ Có thể bị chặn | ✅ Ít bị chặn |
+| **CPU usage** | Thấp | Rất thấp |
+| **Khuyến nghị** | - | ✅ **Dùng cái này** |
+
+**📖 Chi tiết:** Xem `scripts/README_RAWINPUT.md`
 
 ---
 
@@ -315,12 +366,33 @@ g++ send_q_cpp.cpp -o send_q.exe ^
 
 ### **BƯỚC 2: Chạy ứng dụng Windows**
 
+**Raw Input version (khuyến nghị - nhanh nhất):**
 ```bash
 cd d:\duk\autoXdame\pico_macro\scripts
-send_q.exe
+send_q_rawinput.exe
 ```
 
-**Kết quả mong đợi:**
+**Hook version (phiên bản gốc):**
+```bash
+cd d:\duk\autoXdame\pico_macro\scripts
+send_q_hook.exe
+```
+
+**Kết quả mong đợi (Raw Input):**
+```
+=== Pico Macro Controller (RAW INPUT - OPTIMIZED) ===
+Searching for Pico device...
+[SCAN] Found HID: VID=0x2E8A PID=0x0005
+[OK] Found Pico device!
+[CONNECT] Connected to Pico (HID mode)
+[OK] Raw Input registered successfully
+[INFO] Lower latency mode enabled (~0.5ms faster)
+[INFO] Press Q key on keyboard to trigger macro
+[INFO] Close this window to exit
+[PERF] Optimized mode: Raw Input (lowest latency)
+```
+
+**Kết quả mong đợi (Hook):**
 ```
 === Pico Macro Controller (USB HID) ===
 Searching for Pico device...
