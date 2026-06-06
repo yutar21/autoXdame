@@ -1,8 +1,6 @@
 #include <windows.h>
 #include <setupapi.h>
 #include <hidsdi.h>
-#include <iostream>
-#include <string>
 #include <cstdio>
 
 #pragma comment(lib, "setupapi.lib")
@@ -17,27 +15,18 @@
 HANDLE g_hid_device = INVALID_HANDLE_VALUE;
 HWND g_hwnd = NULL;
 
-const USHORT PICO_VID = 0x2E8A;
-const USHORT PICO_PID = 0x0005;
+const USHORT PICO_VID = 0xCAFE;
+const USHORT PICO_PID = 0x4006;  // HID Composite (single interface)
 
-// Pre-allocated buffer for faster sending
-static UCHAR g_trigger_report[9] = {0, 0x51, 0, 0, 0, 0, 0, 0, 0};
+// Pre-allocated buffer - Report ID 3 (Vendor) + trigger byte
+static UCHAR g_trigger_report[9] = {3, 0x51, 0, 0, 0, 0, 0, 0, 0};  // [ReportID=3, 'Q', ...]
 
 // Inline function for fastest possible send
 inline void SendTriggerToPico()
 {
     if (g_hid_device != INVALID_HANDLE_VALUE)
     {
-        if (HidD_SetOutputReport(g_hid_device, g_trigger_report, sizeof(g_trigger_report)))
-        {
-            printf("[SENT] Trigger sent (Raw Input mode)\n");
-            fflush(stdout);
-        }
-        else
-        {
-            printf("[ERROR] HID write failed\n");
-            fflush(stdout);
-        }
+        HidD_SetOutputReport(g_hid_device, g_trigger_report, sizeof(g_trigger_report));
     }
 }
 
@@ -133,6 +122,9 @@ bool FindAndOpenPicoDevice()
     return true;
 }
 
+// Pre-allocated Raw Input buffer (tránh new/delete mỗi lần nhấn phím)
+static BYTE g_raw_input_buf[sizeof(RAWINPUT) + 64];
+
 // Window procedure to handle Raw Input
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -140,32 +132,18 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         case WM_INPUT:
         {
-            UINT dwSize = 0;
-            GetRawInputData((HRAWINPUT)lParam, RID_INPUT, NULL, &dwSize, sizeof(RAWINPUTHEADER));
-            
-            LPBYTE lpb = new BYTE[dwSize];
-            if (lpb == NULL)
-                return 0;
-
-            if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER)) != dwSize)
+            UINT dwSize = sizeof(g_raw_input_buf);
+            if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT,
+                g_raw_input_buf, &dwSize, sizeof(RAWINPUTHEADER)) != (UINT)-1)
             {
-                delete[] lpb;
-                return 0;
-            }
-
-            RAWINPUT* raw = (RAWINPUT*)lpb;
-
-            if (raw->header.dwType == RIM_TYPEKEYBOARD)
-            {
-                // Check for Q key press (VK: 0x51, Make code: down)
-                if (raw->data.keyboard.VKey == 0x51 && 
-                    !(raw->data.keyboard.Flags & RI_KEY_BREAK))  // Key down, not key up
+                RAWINPUT* raw = (RAWINPUT*)g_raw_input_buf;
+                if (raw->header.dwType == RIM_TYPEKEYBOARD &&
+                    raw->data.keyboard.VKey == 0x51 &&
+                    !(raw->data.keyboard.Flags & RI_KEY_BREAK))
                 {
                     SendTriggerToPico();
                 }
             }
-
-            delete[] lpb;
             return 0;
         }
 
@@ -190,7 +168,7 @@ bool RegisterRawInputDevices(HWND hwnd)
     rid[0].usUsagePage = 0x01;  // HID_USAGE_PAGE_GENERIC
     rid[0].usUsage = 0x06;      // HID_USAGE_GENERIC_KEYBOARD
     rid[0].dwFlags = RIDEV_INPUTSINK;  // Receive input even when not in foreground
-    rid[0].hwndTarget = hwnd;
+    rid[0].hwndTarget = g_hwnd;
 
     if (!RegisterRawInputDevices(rid, 1, sizeof(rid[0])))
     {
@@ -240,7 +218,7 @@ int main()
     g_hwnd = CreateWindowEx(
         0,
         "PicoMacroRawInput",
-        "Pico Macro Controller",
+        "DukTLT",
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, 400, 200,
         NULL, NULL,
@@ -281,8 +259,7 @@ int main()
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0))
     {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+        DispatchMessage(&msg);  // Bỏ TranslateMessage - không cần WM_CHAR
     }
 
     // Cleanup
